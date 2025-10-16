@@ -1,32 +1,40 @@
-# ¹¹½¨½×¶Î
+# æ„å»ºé˜¶æ®µ
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
+ARG COMMON_REPO=https://github.com/luoliAsyns/Common.git
 
-# ÉèÖÃ¹¤×÷Ä¿Â¼ÎªÏîÄ¿¸ùÄ¿Â¼£¨DockerfileËùÔÚÄ¿Â¼£©
+RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+
+# è®¾ç½®å·¥ä½œç›®å½•ä¸ºé¡¹ç›®æ ¹ç›®å½•ï¼ˆDockerfileæ‰€åœ¨ç›®å½•ï¼‰
 WORKDIR /src
 
 
+# å…‹éš†Commonä»“åº“
+# ä½¿ç”¨GitHub tokenè¿›è¡Œè®¤è¯ï¼Œé¿å…å…¬å…±ä»“åº“çš„APIé™åˆ¶æˆ–è®¿é—®ç§æœ‰ä»“åº“
+RUN if [ -n "$GITHUB_TOKEN" ]; then \
+        git clone https://$GITHUB_TOKEN@$(echo $COMMON_REPO | sed 's/^https:\/\///') Common; \
+    else \
+        git clone $COMMON_REPO Common; \
+    fi
 
-# ¸´ÖÆCommonÄ¿Â¼£¨´ÓËŞÖ÷»úÏà¶ÔÂ·¾¶µ½ÈİÆ÷ÄÚ£©
-# ×¢Òâ£ºÕâÀïµÄ../..ÊÇÏà¶ÔÓÚDockerfileµÄÎ»ÖÃ
-COPY Common ./Common/
-COPY ExternalOrderService ./ExternalOrderService/
 
-# È·±£¹¤×÷Ä¿Â¼ÕıÈ·Ö¸ÏòÏîÄ¿ÎÄ¼ş
+COPY . ./ExternalOrderService/
+
+# ç¡®ä¿å·¥ä½œç›®å½•æ­£ç¡®æŒ‡å‘é¡¹ç›®æ–‡ä»¶
 WORKDIR "/src/ExternalOrderService"
 
-# ÏÈ»¹Ô­ÒÀÀµ£¬È·±£ÄÜÕÒµ½CommonÏîÄ¿
-RUN dotnet restore "./ExternalOrderService/ExternalOrderService.csproj"
+# å…ˆè¿˜åŸä¾èµ–ï¼Œç¡®ä¿èƒ½æ‰¾åˆ°Commoné¡¹ç›®
+RUN dotnet restore "./ExternalOrderService.csproj"
 
-# ¹¹½¨ÏîÄ¿
-RUN dotnet build "./ExternalOrderService/ExternalOrderService.csproj" -c $BUILD_CONFIGURATION -o /app/build
+# æ„å»ºé¡¹ç›®
+RUN dotnet build "./ExternalOrderService.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
-# ·¢²¼½×¶Î
+# å‘å¸ƒé˜¶æ®µ
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./ExternalOrderService/ExternalOrderService.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "./ExternalOrderService.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
-# ÔËĞĞ½×¶Î
+# è¿è¡Œé˜¶æ®µ
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
