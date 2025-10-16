@@ -103,6 +103,31 @@ jobs:
         run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
 
 
+      # 压缩构建产物（方便传输）
+      - name: Compress build artifacts
+        run: |
+          # 将构建目录（如 dist）压缩为 zip 包
+          zip -r deploy.zip ./dist  # 若产物在其他目录，替换为实际路径
+
+      # 安装 sshpass 用于通过密码 SSH 传输文件
+      - name: Install sshpass
+        run: sudo apt-get install -y sshpass
+
+      # 通过 SSH 将压缩包传输到云服务器并部署
+      - name: Send to cloud server
+        env:
+          # 从 Secrets 中获取服务器信息（提前在仓库添加这些 Secret）
+          SSH_HOST: ${{ secrets.SSH_HOST }}       # 云服务器 IP
+          SSH_USER: ${{ secrets.SSH_USER }}       # 登录用户名（如 root）
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }} # 登录密码
+          REMOTE_DIR: /app/ExternalOrder           # 服务器上的部署目录
+        run: |
+          # 创建远程目录（若不存在）
+          sshpass -p "$SSH_PASSWORD" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST "mkdir -p $REMOTE_DIR"
+          
+          # 将压缩包上传到云服务器
+          sshpass -p "$SSH_PASSWORD" scp -o StrictHostKeyChecking=no ./deploy.zip $SSH_USER@$SSH_HOST:$REMOTE_DIR/
+          
       - name: Deploy to Cloud Server
         # 使用ssh-action插件部署到云服务器
         uses: appleboy/ssh-action@master
