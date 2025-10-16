@@ -97,3 +97,12 @@ jobs:
         # This step uses the identity token to provision an ephemeral certificate
         # against the sigstore community Fulcio instance.
         run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
+
+
+      - name: Upgrade container in yun   # 更新云服务器的容器
+        uses: appleboy/ssh-action@master  # 第三方 SSH  Action
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: /app/ExternalOrder/update-app.sh  # 执行云服务器上的脚本
