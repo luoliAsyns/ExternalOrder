@@ -6,6 +6,10 @@ name: Docker Build and Push
 # documentation.
 
 on:
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: '请输入要操作的tags名称，例如v1.0.0'
   push:
     # Publish semver tags as releases.
     tags: [ 'v*.*.*' ]
@@ -99,10 +103,11 @@ jobs:
         run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
 
 
-      - name: Upgrade container in yun   # 更新云服务器的容器
-        uses: appleboy/ssh-action@master  # 第三方 SSH  Action
+      - name: Deploy to Cloud Server
+        # 使用ssh-action插件部署到云服务器
+        uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
-          password: ${{ secrets.SSH_PASSWORD }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: /app/ExternalOrder/update-app.sh  # 执行云服务器上的脚本
