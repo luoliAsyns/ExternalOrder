@@ -100,9 +100,6 @@ jobs:
         run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
 
 
-      - name: Install sshpass
-        run: sudo apt-get install -y sshpass  # 安装sshpass工具
-
       - name: Deploy to Cloud Server
         # 使用ssh-action插件部署到云服务器
         uses: appleboy/ssh-action@master
