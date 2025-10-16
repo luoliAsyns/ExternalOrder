@@ -16,6 +16,8 @@ RUN if [ -n "$GITHUB_TOKEN" ]; then \
     else \
         git clone $COMMON_REPO Common; \
     fi
+    
+RUN echo "查看Common目录结构:" && ls -R Common/
 
 
 COPY . ./ExternalOrderService/
