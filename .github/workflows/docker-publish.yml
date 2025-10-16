@@ -103,11 +103,15 @@ jobs:
         run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
 
 
-      # 压缩构建产物（方便传输）
-      - name: Compress build artifacts
+
+        # 保存Docker镜像到本地
+      - name: Save Docker image
         run: |
-          # 将构建目录（如 dist）压缩为 zip 包
-          zip -r deploy.zip ./dist  # 若产物在其他目录，替换为实际路径
+          # 从元数据中获取镜像标签
+          IMAGE_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n 1)
+          # 保存镜像为tar文件
+          docker save -o external-order-service.tar $IMAGE_TAG
+     
 
       # 安装 sshpass 用于通过密码 SSH 传输文件
       - name: Install sshpass
@@ -126,7 +130,7 @@ jobs:
           sshpass -p "$SSH_PASSWORD" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST "mkdir -p $REMOTE_DIR"
           
           # 将压缩包上传到云服务器
-          sshpass -p "$SSH_PASSWORD" scp -o StrictHostKeyChecking=no ./deploy.zip $SSH_USER@$SSH_HOST:$REMOTE_DIR/
+          sshpass -p "$SSH_PASSWORD" scp -o StrictHostKeyChecking=no ./external-order-service.tar $SSH_USER@$SSH_HOST:$REMOTE_DIR/
           
       - name: Deploy to Cloud Server
         # 使用ssh-action插件部署到云服务器
