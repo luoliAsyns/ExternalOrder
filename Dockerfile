@@ -17,7 +17,7 @@ RUN if [ -n "$GITHUB_TOKEN" ]; then \
         git clone $COMMON_REPO Common; \
     fi
     
-mv /src/Common /Common/
+RUN mv /src/Common /Common/
 
 COPY . ./ExternalOrderService/
 
