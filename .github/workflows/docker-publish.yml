@@ -110,6 +110,12 @@ jobs:
           # 从元数据中获取镜像标签
           IMAGE_TAG=$(echo "${{ steps.meta.outputs.tags }}" | tr '\n' ' ' | awk '{print $1}')
           echo "Using image tag: $IMAGE_TAG"
+          # 验证镜像是否存在
+          if ! docker images --format "{{.Repository}}:{{.Tag}}" | grep -q "$IMAGE_TAG"; then
+            echo "Image $IMAGE_TAG not found locally. Attempting to pull..."
+            docker pull "$IMAGE_TAG"
+          fi
+    
           # 保存镜像为tar文件
           docker save -o external-order-service.tar $IMAGE_TAG
      
