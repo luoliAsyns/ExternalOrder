@@ -105,4 +105,5 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }} 
+          use_insecure_cipher: true  # 新增：启用密码认证支持
           script: /app/ExternalOrder/update-app.sh  # 执行云服务器上的脚本
