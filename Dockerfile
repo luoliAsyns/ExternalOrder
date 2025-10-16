@@ -25,6 +25,8 @@ COPY . ./ExternalOrderService/
 # 确保工作目录正确指向项目文件
 WORKDIR "/src/ExternalOrderService"
 
+RUN echo "查看/src/ExternalOrderService目录结构:" && ls
+
 # 先还原依赖，确保能找到Common项目
 RUN dotnet restore "./ExternalOrderService.csproj"
 
