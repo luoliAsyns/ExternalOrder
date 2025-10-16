@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>d369009d-a7d3-418f-b1e7-a93349ed9b85</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <AssemblyVersion>25</AssemblyVersion>
+    <FileVersion>10.15.3</FileVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MethodTimer.Fody" Version="3.2.3" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
+    <PackageReference Include="RabbitMQ.Client" Version="7.1.2" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Common\LuoliCommon\LuoliCommon.csproj" />
+    <ProjectReference Include="..\..\Common\LuoliDatabase\LuoliDatabase.csproj" />
+    <ProjectReference Include="..\..\Common\LuoliUtils\LuoliUtils.csproj" />
+  </ItemGroup>
+
+</Project>
