@@ -8,8 +8,8 @@ name: Docker Build and Push
 on:
   workflow_dispatch:
     inputs:
-      tag:
-        description: '请输入要操作的tag名称，例如v1.0.0'
+      tags:
+        description: '请输入要操作的tags名称，例如v1.0.0'
   push:
     # Publish semver tags as releases.
     tags: [ 'v*.*.*' ]
