@@ -6,10 +6,6 @@ name: Docker Build and Push
 # documentation.
 
 on:
-  workflow_dispatch:
-    inputs:
-      tags:
-        description: '请输入要操作的tags名称，例如v1.0.0'
   push:
     # Publish semver tags as releases.
     tags: [ 'v*.*.*' ]
@@ -73,7 +69,6 @@ jobs:
             type=ref,event=tag
             # 可选：添加latest标签（当推送的是最新版本时）
             type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
-
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
       - name: Build and push Docker image
@@ -103,45 +98,8 @@ jobs:
         run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
 
 
-
-        # 保存Docker镜像到本地
-      - name: Save Docker image
-        run: |
-          # 从元数据中获取镜像标签
-          IMAGE_TAG=$(echo "${{ steps.meta.outputs.tags }}" | tr '\n' ' ' | awk '{print $1}')
-          echo "Using image tag: $IMAGE_TAG"
-          # 验证镜像是否存在
-          if ! docker images --format "{{.Repository}}:{{.Tag}}" | grep -q "$IMAGE_TAG"; then
-            echo "Image $IMAGE_TAG not found locally. Attempting to pull..."
-            docker pull "$IMAGE_TAG"
-          fi
-    
-          # 保存镜像为tar文件
-          docker save -o external-order-service.tar $IMAGE_TAG
-     
-
-      # 安装 sshpass 用于通过密码 SSH 传输文件
-      - name: Install sshpass
-        run: sudo apt-get install -y sshpass
-
-      # 通过 SSH 将压缩包传输到云服务器并部署
-      - name: Send to cloud server
-        env:
-          # 从 Secrets 中获取服务器信息（提前在仓库添加这些 Secret）
-          SSH_HOST: ${{ secrets.SSH_HOST }}       # 云服务器 IP
-          SSH_USER: ${{ secrets.SSH_USER }}       # 登录用户名（如 root）
-          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }} # 登录密码
-          REMOTE_DIR: /app/ExternalOrder           # 服务器上的部署目录
-        run: |
-          # 创建远程目录（若不存在）
-          sshpass -p "$SSH_PASSWORD" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST "mkdir -p $REMOTE_DIR"
-          
-          # 将压缩包上传到云服务器
-          sshpass -p "$SSH_PASSWORD" scp -o StrictHostKeyChecking=no ./external-order-service.tar $SSH_USER@$SSH_HOST:$REMOTE_DIR/
-          
-      - name: Deploy to Cloud Server
-        # 使用ssh-action插件部署到云服务器
-        uses: appleboy/ssh-action@master
+      - name: Upgrade container in yun   # 更新云服务器的容器
+        uses: appleboy/ssh-action@master  # 第三方 SSH  Action
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
