@@ -99,11 +99,15 @@ jobs:
         run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
 
 
-      - name: Upgrade container in yun   # 更新云服务器的容器
-        uses: appleboy/ssh-action@master  # 第三方 SSH  Action
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          password: ${{ secrets.SSH_PASSWORD }} 
-          use_insecure_cipher: true  # 新增：启用密码认证支持
-          script: /app/ExternalOrder/update-app.sh  # 执行云服务器上的脚本
+      - name: Install sshpass
+        run: sudo apt-get install -y sshpass  # 安装sshpass工具
+
+      - name: Execute remote command
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+        run: |
+          # 执行远程脚本，-o StrictHostKeyChecking=no 跳过主机密钥验证
+          sshpass -p "$SSH_PASSWORD" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST "/app/ExternalOrder/update-app.sh"
+
