@@ -6,6 +6,7 @@ name: Docker Build and Push
 # documentation.
 
 on:
+  workflow_dispatch:
   push:
     # Publish semver tags as releases.
     tags: [ 'v*.*.*' ]
