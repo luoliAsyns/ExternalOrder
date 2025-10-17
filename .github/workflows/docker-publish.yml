@@ -97,6 +97,35 @@ jobs:
         # against the sigstore community Fulcio instance.
         run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
 
+      # 发布到 docker hub
+      # 登录 Docker Hub
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      # 提取标签（用于镜像版本）
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKER_HUB_USERNAME }}/luoliasyns  # 替换为你的 Docker Hub 仓库名
+          tags: |
+            type=ref,event=branch  # 分支名作为标签（如 main）
+            type=semver,pattern={{version}}  # 语义化版本标签（如 v1.0.0 → 1.0.0）
+            type=semver,pattern={{major}}.{{minor}}  # 主版本.次版本（如 1.0）
+            type=sha,format=short  # 短 SHA 作为标签（如 a1b2c3d）
+            type=raw,value=latest,enable={{is_default_branch}}  # 主分支默认打 latest 标签
+
+      # 4. 构建并推送镜像
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .  # Dockerfile 所在目录
+          push: true  # 推送镜像到仓库
+          tags: ${{ steps.meta.outputs.tags }}  # 使用上面提取的标签
+          labels: ${{ steps.meta.outputs.labels }}  # 添加元数据标签
 
       - name: Upgrade container in yun   # 更新云服务器的容器
         uses: appleboy/ssh-action@master  # 第三方 SSH  Action
