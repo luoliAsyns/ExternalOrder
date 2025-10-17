@@ -105,18 +105,6 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-      # 提取标签（用于镜像版本）
-      - name: Extract metadata (tags, labels)
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ secrets.DOCKER_HUB_USERNAME }}/luoliasyns  # 替换为你的 Docker Hub 仓库名
-          tags: |
-            type=ref,event=branch  # 分支名作为标签（如 main）
-            type=semver,pattern={{version}}  # 语义化版本标签（如 v1.0.0 → 1.0.0）
-            type=semver,pattern={{major}}.{{minor}}  # 主版本.次版本（如 1.0）
-            type=sha,format=short  # 短 SHA 作为标签（如 a1b2c3d）
-            type=raw,value=latest,enable={{is_default_branch}}  # 主分支默认打 latest 标签
 
       # 4. 构建并推送镜像
       - name: Build and push Docker image
