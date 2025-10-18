@@ -160,7 +160,7 @@ namespace ExternalOrderService
             catch (Exception ex)
             {
                 result.msg = ex.Message;
-                _logger.Error($"while SqlSugarExternalOrderService.UpdateAsync with Tid:[{Tid}]");
+                _logger.Error($"while SqlSugarExternalOrderService.GetAsync with Tid:[{Tid}]");
                 _logger.Error(ex.Message);
             }
 

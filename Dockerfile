@@ -11,11 +11,18 @@ WORKDIR /src
 
 # 克隆Common仓库
 # 使用GitHub token进行认证，避免公共仓库的API限制或访问私有仓库
+# 关键修改：克隆后拉取最新代码，避免缓存旧版本
 RUN if [ -n "$GITHUB_TOKEN" ]; then \
-        git clone https://$GITHUB_TOKEN@$(echo $COMMON_REPO | sed 's/^https:\/\///') Common; \
+        # 使用 token 克隆，避免 API 限制
+        git clone -b $COMMON_BRANCH https://$GITHUB_TOKEN@$(echo $COMMON_REPO | sed 's/^https:\/\///') Common; \
     else \
-        git clone $COMMON_REPO Common; \
-    fi
+        # 无 token 时直接克隆
+        git clone -b $COMMON_BRANCH $COMMON_REPO Common; \
+    fi && \
+    # 进入 Common 目录，拉取最新提交（确保是远程最新版本）
+    cd Common && \
+    git pull origin $COMMON_BRANCH
+
     
 RUN mv /src/Common /Common/
 
