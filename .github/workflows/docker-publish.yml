@@ -8,9 +8,10 @@ name: Docker Build and Push
 on:
   push:
     # Publish semver tags as releases.
-    tags: [ 'v*.*.*' ]
+    tags: [ 'v*.*.*.*' ]
   pull_request:
     branches: [ "master" ]
+    
 
 env:
   # Use docker.io for Docker Hub if empty
@@ -23,8 +24,12 @@ env:
 
 jobs:
   build:
-
+    
     runs-on: ubuntu-22.04
+    env:
+      LANG: zh_CN.UTF-8    # 设置语言编码为 UTF-8
+      LC_ALL: zh_CN.UTF-8  # 统一所有本地化设置为 UTF-8
+      
     permissions:
       contents: read
       packages: write
