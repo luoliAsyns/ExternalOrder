@@ -80,7 +80,7 @@ jobs:
         with:
           images: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-            ${{ secrets.DOCKER_HUB_USERNAME }}/shipbot
+            ${{ secrets.DOCKER_HUB_USERNAME }}/externalorder
           # 只使用推送的标签作为镜像标签
           tags: |
             type=ref,event=tag
