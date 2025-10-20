@@ -122,9 +122,11 @@ namespace ExternalOrderService.Controllers
         [HttpPost]
         [Route("api/external-order/update")]
         public async Task<ApiResponse<bool>> Update(
-           [FromBody] ExternalOrderDTO dto)
+           [FromBody] UpdateRequest ur)
         {
             _logger.Info($"trigger ExternalOrderService.Controllers.Update");
+
+            var dto = ur.EO;
 
             ApiResponse<bool> response = new();
             response.code = EResponseCode.Fail;
@@ -137,6 +139,17 @@ namespace ExternalOrderService.Controllers
                 _logger.Error($"while ExternalOrderService.Controllers.Update, not passed validate. msg:[{msg}]");
                 return response;
             }
+            var rawStatus = ur.EO.Status;
+
+            var updateStatus= ur.UpdateStatus(ur.EO, ur.Event);
+            if(!updateStatus)
+            {
+                response.msg = $"tid:[{ur.EO.Tid}] raw Status:[{rawStatus}] Event:[{ur.Event.ToString()}], not meet UpdateStatus condition";
+                _logger.Error(response.msg);
+                return response;
+            }
+
+            _logger.Info($"tid:[{ur.EO.Tid}] raw Status:[{rawStatus.ToString()}] Event:[{ur.Event.ToString()}] new Status:[{ur.EO.Status.ToString()}]");
 
             try
             {
