@@ -63,7 +63,7 @@ namespace ExternalOrderService
 
 
                 await _channel.BasicPublishAsync(exchange: string.Empty,
-                    routingKey: RabbitMQKeys.ExternalOrderInserted, 
+                    routingKey: Program.Config.KVPairs["StartWith"] + RabbitMQKeys.ExternalOrderInserted, 
                     true,
                     _rabbitMQMsgProps,
                    Encoding.UTF8.GetBytes(JsonSerializer.Serialize(dto)));
