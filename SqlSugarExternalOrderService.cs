@@ -182,7 +182,8 @@ namespace ExternalOrderService
 
                 await _sqlClient.BeginTranAsync();
                 int impactRows = await _sqlClient.Updateable(dto.ToEntity())
-                 .Where($"from_platform='{dto.FromPlatform}' and tid='{dto.Tid}' and is_deleted='0'").ExecuteCommandAsync();
+                 .Where($"from_platform='{dto.FromPlatform}' and tid='{dto.Tid}' and is_deleted='0'")
+                 .IgnoreColumns(it=> new {it.tid, it.from_platform}).ExecuteCommandAsync();
                 await _sqlClient.CommitTranAsync();
                 if (impactRows != 1)
                     throw new Exception("SqlSugarExternalOrderService.UpdateAsync impactRows not equal to 1");

@@ -24,6 +24,8 @@ namespace ExternalOrderService
 
         private static bool init()
         {
+            Console.OutputEncoding = System.Text.Encoding.UTF8;
+
             bool result = false;
             string configFolder = "/app/ExternalOrder/configs";
 
