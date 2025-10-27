@@ -53,6 +53,8 @@ namespace ExternalOrderService
 
                 try
                 {
+                    _logger.Info("ExternalOrder.ConsumerService[For insert EO into DB] received message");
+                    _logger.Debug(message);
                     var dto = JsonSerializer.Deserialize<ExternalOrderDTO>(message);
                     // 使用ServiceProvider创建作用域，以便获取Controller实例
                     using (var scope = _serviceProvider.CreateScope())
@@ -66,6 +68,7 @@ namespace ExternalOrderService
                         // 如果需要处理返回结果
                         if (result.ok)
                         {
+                            _logger.Info($"ExternalOrder.ConsumerService[For insert EO into DB] success with ExternalOrder.Tid[{dto.Tid}]");
                             // 处理成功，确认消息
                             await _channel.BasicAckAsync(
                                 deliveryTag: ea.DeliveryTag,
@@ -75,7 +78,7 @@ namespace ExternalOrderService
                         else
                         {
                             // 处理失败，根据需要决定是否重新入队
-                            _logger.Error("while ConsumerService, insert ExternalOrderDTO failed");
+                            _logger.Error($"while ConsumerService[For insert EO into DB] failed with ExternalOrder.Tid[{dto.Tid}]");
                             await _channel.BasicNackAsync(
                                 deliveryTag: ea.DeliveryTag,
                                 multiple: false,

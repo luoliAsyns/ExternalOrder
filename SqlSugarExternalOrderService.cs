@@ -42,21 +42,23 @@ namespace ExternalOrderService
         private static BasicProperties _rabbitMQMsgProps = new BasicProperties();
 
 
-        [Time]
         public async Task<ApiResponse<bool>> InsertAsync(ExternalOrderDTO dto)
         {
-            _logger.Debug("starting SqlSugarExternalOrderService.InsertAsync ");
             var result = new ApiResponse<bool>();
             result.code= EResponseCode.Fail;
             result.data = false;
 
             try
             {
+                _logger.Info($"InsertAsync BeginTran with ExternalOrderDTO.Tid:[{dto.Tid}]");
+
                 await _sqlClient.BeginTranAsync();
                 var entity = dto.ToEntity();
 
                 await _sqlClient.Insertable(entity).ExecuteCommandAsync();
                 await _sqlClient.CommitTranAsync();
+
+                _logger.Info($"InsertAsync commit success with ExternalOrderDTO.Tid:[{dto.Tid}]");
 
                 result.code = EResponseCode.Success;
                 result.data = true;
@@ -69,14 +71,14 @@ namespace ExternalOrderService
                    Encoding.UTF8.GetBytes(JsonSerializer.Serialize(dto)));
 
                 
-                _logger.Debug($"SqlSugarExternalOrderService.InsertAsync success with dto.Tid:[{dto.Tid}]");
+                _logger.Info($"SqlSugarExternalOrderService.InsertAsync sent ExternalOrderDTO to MQ [{Program.Config.KVPairs["StartWith"] + RabbitMQKeys.ExternalOrderInserted}] with ExternalOrderDTO.Tid:[{dto.Tid}]");
                 
             }
             catch (Exception ex)
             {
                 result.msg = ex.Message;
                 await _sqlClient.RollbackTranAsync();
-                _logger.Error($"while SqlSugarExternalOrderService.InsertAsync with dto.Tid:[{dto.Tid}]");
+                _logger.Error($"while SqlSugarExternalOrderService.InsertAsync, rollback with ExternalOrderDTO.Tid:[{dto.Tid}]");
                 _logger.Error(ex.Message);
             }
 
@@ -95,27 +97,35 @@ namespace ExternalOrderService
 
             try
             {
+                _logger.Info($"DeleteAsync BeginTran with ExternalOrderDTO.Tid:[{request.tid}]");
+
                 await _sqlClient.BeginTranAsync();
-               int impactRows= await _sqlClient.Updateable<object>()
-                .AS("external_order")
-                .SetColumns("is_deleted", true)
-                .Where($"from_platform='{request.from_platform}' and tid='{request.tid}'").ExecuteCommandAsync();
-                await _sqlClient.CommitTranAsync();
+                int impactRows= await _sqlClient.Updateable<object>()
+                    .AS("external_order")
+                    .SetColumns("is_deleted", true)
+                    .Where($"from_platform='{request.from_platform}' and tid='{request.tid}'").ExecuteCommandAsync();
+
                 if (impactRows != 1)
                     throw new Exception("SqlSugarExternalOrderService.DeleteAsync impactRows not equal to 1");
 
+                await _sqlClient.CommitTranAsync();
+
+                _logger.Info($"DeleteAsync commit success with ExternalOrderDTO.Tid:[{request.tid}]");
+
+
                 result.code = EResponseCode.Success;
                 result.data = true;
-                _logger.Debug($"SqlSugarExternalOrderService.DeleteAsync success with Tid:[{request.tid}]");
 
                 RedisHelper.DelAsync(redisKey);
+
+                _logger.Info($"SqlSugarExternalOrderService.DeleteAsync success with ExternalOrderDTO.Tid:[{request.tid}], remove cache");
 
             }
             catch (Exception ex)
             {
                 result.msg = ex.Message;
                 await _sqlClient.RollbackTranAsync();
-                _logger.Error($"while SqlSugarExternalOrderService.DeleteAsync with Tid:[{request.tid}]");
+                _logger.Error($"while SqlSugarExternalOrderService.DeleteAsync with ExternalOrderDTO.Tid:[{request.tid}]");
                 _logger.Error(ex.Message);
             }
 
@@ -125,7 +135,6 @@ namespace ExternalOrderService
 
         public async Task<ApiResponse<ExternalOrderDTO>> GetAsync(string fromPlatform, string Tid)
         {
-            _logger.Debug("starting SqlSugarExternalOrderService.GetAsync ");
             var result = new ApiResponse<ExternalOrderDTO>();
             result.code = EResponseCode.Fail;
             result.data = null;
@@ -133,28 +142,33 @@ namespace ExternalOrderService
             try
             {
                 var redisKey = $"externalorder.{fromPlatform}.{Tid}";
-                var externalOrder = RedisHelper.Get<ExternalOrderEntity>(redisKey);
+                var externalOrder =await RedisHelper.GetAsync<ExternalOrderEntity>(redisKey);
 
                 if(!(externalOrder is null))
                 {
+                    _logger.Info($"cache hit for key:[{redisKey}]");
                     result.code = EResponseCode.Success;
                     result.data = externalOrder.ToDTO();
                     result.msg = "from redis";
                     return result;
                 }
 
-                externalOrder= await _sqlClient.Queryable<ExternalOrderEntity>()
+                _logger.Info($"cache miss for key:[{redisKey}]");
+
+                externalOrder = await _sqlClient.Queryable<ExternalOrderEntity>()
                     .Where(o=>o.tid == Tid && o.from_platform == fromPlatform && o.is_deleted == 0).FirstAsync();
-              
-               
+                
                 result.code = EResponseCode.Success;
                 result.data = externalOrder.ToDTO();
                 result.msg = "from database";
 
-                if (!(result.data is null))
+                if (result.data is null)
+                    _logger.Warn($"SqlSugarExternalOrderService.GetAsync success with Tid:[{Tid}], but data is null");
+                else
+                {
                     RedisHelper.SetAsync(redisKey, externalOrder, 60);
-
-                _logger.Debug($"SqlSugarExternalOrderService.GetAsync success with Tid:[{Tid}]");
+                    _logger.Info($"SqlSugarExternalOrderService.GetAsync success with Tid:[{Tid}], add it into cache");
+                }
 
             }
             catch (Exception ex)
@@ -171,7 +185,6 @@ namespace ExternalOrderService
 
         public async Task<ApiResponse<bool>> UpdateAsync(ExternalOrderDTO dto)
         {
-            _logger.Debug("starting SqlSugarExternalOrderService.UpdateAsync ");
             var result = new ApiResponse<bool>();
             result.code = EResponseCode.Fail;
             result.data = false;
@@ -180,20 +193,27 @@ namespace ExternalOrderService
             {
                 var redisKey = $"externalorder.{dto.FromPlatform}.{dto.Tid}";
 
+                _logger.Info($"UpdateAsync BeginTran with ExternalOrderDTO.Tid:[{dto.Tid}]");
+
                 await _sqlClient.BeginTranAsync();
                 int impactRows = await _sqlClient.Updateable(dto.ToEntity())
-                 .Where($"from_platform='{dto.FromPlatform}' and tid='{dto.Tid}' and is_deleted='0'")
-                 .IgnoreColumns(it=> new {it.tid, it.from_platform}).ExecuteCommandAsync();
-                await _sqlClient.CommitTranAsync();
+                     .Where($"from_platform='{dto.FromPlatform}' and tid='{dto.Tid}' and is_deleted='0'")
+                     .IgnoreColumns(it=> new {it.tid, it.from_platform})
+                     .ExecuteCommandAsync();
                 if (impactRows != 1)
                     throw new Exception("SqlSugarExternalOrderService.UpdateAsync impactRows not equal to 1");
+
+                await _sqlClient.CommitTranAsync();
+                
+                _logger.Info($"UpdateAsync commit success with ExternalOrderDTO.Tid:[{dto.Tid}]");
 
                 result.code = EResponseCode.Success;
                 result.data = true;
 
-                _logger.Debug($"SqlSugarExternalOrderService.UpdateAsync success with Tid:[{dto.Tid}]");
-
                 RedisHelper.DelAsync(redisKey);
+
+                _logger.Info($"SqlSugarExternalOrderService.UpdateAsync success with Tid:[{dto.Tid}], remove cache");
+
             }
             catch (Exception ex)
             {
