@@ -1,6 +1,7 @@
 ﻿using Azure.Core;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
+using LuoliCommon.DTO.Coupon;
 using LuoliCommon.DTO.ExternalOrder;
 using LuoliCommon.Entities;
 using LuoliCommon.Enums;
@@ -87,8 +88,6 @@ namespace ExternalOrderService
 
         public async Task<ApiResponse<bool>> DeleteAsync(DeleteRequest request)
         {
-            _logger.Debug("starting SqlSugarExternalOrderService.DeleteAsync ");
-
             var redisKey = $"externalorder.{request.from_platform}.{request.tid}";
 
             var result = new ApiResponse<bool>();
@@ -131,7 +130,6 @@ namespace ExternalOrderService
 
             return result;
         }
-
 
         public async Task<ApiResponse<ExternalOrderDTO>> GetAsync(string fromPlatform, string Tid)
         {
@@ -181,8 +179,6 @@ namespace ExternalOrderService
             return result;
         }
 
-
-
         public async Task<ApiResponse<bool>> UpdateAsync(ExternalOrderDTO dto)
         {
             var result = new ApiResponse<bool>();
@@ -226,6 +222,57 @@ namespace ExternalOrderService
             return result;
         }
 
-        
+        public async Task<ApiResponse<PageResult<ExternalOrderDTO>>> PageQueryAsync(int page = 1, int size = 10, 
+            DateTime? startTime = null, DateTime? endTime = null)
+        {
+            ApiResponse<PageResult<ExternalOrderDTO>> response = new();
+
+            response.code = EResponseCode.Fail;
+            response.data = null;
+
+            try
+            {
+                var query = _sqlClient
+                    .Queryable<ExternalOrderEntity>()
+                    .Where(o => o.is_deleted == 0); // 排除已删除的订单
+
+                // 动态添加筛选条件
+
+                if (startTime.HasValue)
+                    query = query.Where(o => o.create_time >= startTime.Value);
+
+                if (endTime.HasValue)
+                    query = query.Where(o => o.create_time <= endTime.Value);
+
+                // 4. 执行分页查询（先查总数，再查当前页数据）
+                long total = await query.CountAsync();
+                List<ExternalOrderEntity> eos = await query
+                    .OrderByDescending(o => o.create_time) // 按创建时间倒序
+                    .Skip((page - 1) * size)
+                    .Take(size)
+                    .ToListAsync();
+
+                // 4. 构建分页结果
+                var pageResult = new PageResult<ExternalOrderDTO>
+                {
+                    Total = total,       // 总记录数
+                    Page = page,         // 当前页码
+                    Size = size,         // 每页大小
+                    Items = eos.Select(entity => entity.ToDTO()).ToList()      // 当前页数据列表
+                };
+
+                // 5. 返回统一响应格式
+                response.data = pageResult;
+                response.msg = "success";
+                response.code = EResponseCode.Success;
+            }
+            catch (Exception ex)
+            {
+                response.msg = ex.Message;
+                _logger.Error($"while SqlSugarExternalOrderService.PageQueryAsync with page:[{page}] size:[{size}]");
+                _logger.Error(ex.Message);
+            }
+            return response;
+        }
     }
 }

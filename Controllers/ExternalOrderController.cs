@@ -52,7 +52,35 @@ namespace ExternalOrderService.Controllers
             return response;
         }
 
+        [Time]
+        [HttpGet]
+        [Route("api/external-order/page-query")]
+        public async Task<ApiResponse<PageResult<ExternalOrderDTO>>> PageQuery(
+            [FromQuery] int page,
+            [FromQuery] int size,
+            [FromQuery] DateTime? from,
+            [FromQuery] DateTime? to)
+        {
+            _logger.Info($"trigger ExternalOrderService.Controllers.PageQuery");
 
+            ApiResponse<PageResult<ExternalOrderDTO>> response = new();
+            response.code = EResponseCode.Fail;
+            response.data = null;
+
+            try
+            {
+                response = await _externalOrderService.PageQueryAsync(page, size, from, to);
+            }
+            catch (Exception ex)
+            {
+                response.msg = ex.Message;
+                response.code = EResponseCode.Fail;
+
+                _logger.Error("while ExternalOrderService.Controllers.Query");
+                _logger.Error(ex.Message);
+            }
+            return response;
+        }
 
         [Time]
         [HttpPost]

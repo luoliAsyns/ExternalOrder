@@ -101,6 +101,8 @@ namespace ExternalOrderService
                 }
             };
 
+            _logger.Info($"ExternalOrder.ConsumerService start listen MQ[{_queueName}]");
+
             // 开始消费
             await _channel.BasicConsumeAsync(
                 queue: _queueName,
