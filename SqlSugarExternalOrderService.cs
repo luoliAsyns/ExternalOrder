@@ -164,7 +164,11 @@ namespace ExternalOrderService
                     _logger.Warn($"SqlSugarExternalOrderService.GetAsync success with Tid:[{Tid}], but data is null");
                 else
                 {
-                    RedisHelper.SetAsync(redisKey, externalOrder, 60);
+                    int cacheStoreSec = await RedisHelper.GetAsync<int>(RedisKeys.EOCacheStoreSec);
+                    if (cacheStoreSec <= 0)
+                        cacheStoreSec = 60;
+
+                    RedisHelper.SetAsync(redisKey, externalOrder, cacheStoreSec);
                     _logger.Info($"SqlSugarExternalOrderService.GetAsync success with Tid:[{Tid}], add it into cache");
                 }
 
