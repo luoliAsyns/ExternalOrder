@@ -60,7 +60,7 @@ namespace ExternalOrderService
                     using (var scope = _serviceProvider.CreateScope())
                     {
                         // 获取你的Controller实例
-                        IExternalOrderService eos = scope.ServiceProvider.GetRequiredService<IExternalOrderService>();
+                        IExternalOrderRepo eos = scope.ServiceProvider.GetRequiredService<IExternalOrderRepo>();
 
                         // 调用Controller中的方法
                         var result = await eos.InsertAsync(dto);

@@ -1,6 +1,7 @@
 ﻿using LuoliCommon.DTO.ExternalOrder;
 using LuoliCommon.Entities;
 using LuoliCommon.Enums;
+using LuoliCommon.Interfaces;
 using LuoliCommon.Logger;
 using LuoliDatabase.Extensions;
 using LuoliUtils;
@@ -12,12 +13,12 @@ using ILogger = LuoliCommon.Logger.ILogger;
 
 namespace ExternalOrderService.Controllers
 {
-    public class ExternalOrderController : Controller
+    public class ExternalOrderController : Controller, IExternalOrderService
     {
         private readonly ILogger _logger;
-        private readonly IExternalOrderService _externalOrderService;
+        private readonly IExternalOrderRepo _externalOrderService;
         public ExternalOrderController(ILogger logger, 
-            IExternalOrderService externalOrderService)
+            IExternalOrderRepo externalOrderService)
         {
             _logger = logger;
             _externalOrderService = externalOrderService;
@@ -27,11 +28,11 @@ namespace ExternalOrderService.Controllers
         [Time]
         [HttpGet]
         [Route("api/external-order/query")]
-        public async Task<ApiResponse<ExternalOrderDTO>> Query(
+        public async Task<ApiResponse<ExternalOrderDTO>> Get(
             [FromQuery] string from_platform,
            [FromQuery] string tid )
         {
-            _logger.Info($"trigger ExternalOrderService.Controllers.Query");
+            _logger.Info($"trigger ExternalOrderService.Controllers.GetAsync");
 
             ApiResponse<ExternalOrderDTO> response = new();
             response.code = EResponseCode.Fail;
@@ -193,5 +194,7 @@ namespace ExternalOrderService.Controllers
             }
             return response;
         }
+
+
     }
 }

@@ -5,7 +5,7 @@ using MethodTimer;
 namespace ExternalOrderService
 {
 
-    public interface IExternalOrderService
+    public interface IExternalOrderRepo
     {
         Task<ApiResponse<bool>> InsertAsync(ExternalOrderDTO dto);
         Task<ApiResponse<ExternalOrderDTO>> GetAsync(string fromPlatform, string Tid);

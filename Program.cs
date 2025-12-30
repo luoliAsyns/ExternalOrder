@@ -185,9 +185,9 @@ namespace ExternalOrderService
 
             #endregion
 
-            #region 注册IExternalService
+            #region 注册IExternalOrderRepo
 
-            builder.Services.AddScoped<IExternalOrderService, SqlSugarExternalOrderService>();
+            builder.Services.AddScoped<IExternalOrderRepo, SqlSugarExternalOrderRepo>();
 
             #endregion
 

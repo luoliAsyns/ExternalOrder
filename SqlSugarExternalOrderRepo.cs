@@ -21,7 +21,7 @@ using ILogger = LuoliCommon.Logger.ILogger;
 namespace ExternalOrderService
 {
     // 实现服务接口
-    public class SqlSugarExternalOrderService : IExternalOrderService
+    public class SqlSugarExternalOrderRepo : IExternalOrderRepo
     {
         // 注入的依赖项
         private readonly ILogger _logger;
@@ -29,7 +29,7 @@ namespace ExternalOrderService
         private readonly IChannel _channel;
 
         // 构造函数注入
-        public SqlSugarExternalOrderService( ILogger logger, SqlSugarClient sqlClient,
+        public SqlSugarExternalOrderRepo( ILogger logger, SqlSugarClient sqlClient,
              IChannel channel)
         {
             _logger = logger;
